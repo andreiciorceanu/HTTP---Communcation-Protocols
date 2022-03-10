@@ -1,0 +1,72 @@
+324CA Ciorceanu Andrei Razvan
+    Tema 3 PC
+
+    Am folosit in implementare scheletul si functiile din laboratorul 10.
+
+    In helper.c am schimbat portul si ip_server cu cele date din cerinta, am adaugat niste constante pentru dimensiunea maxima a bufferlor
+citite si pentru line cel folosit in requests.c, restul functii sunt preluate exact la fel din laboratorul 10 de pe OCW.
+De asemenea am mai inclus in helpers.h si utilitarul DIE folosit pentru a verifica alocarea corecta de memorie pentru buffere si variabile.
+
+    In fisierele buffer.c, buffer.h am preluat exact la fel scheletul din laboratorul,fara a adauga modificari.
+
+    Fisierele parson.h si parson.c au fost adaugate pentru a parsa raspunsurrile primite de la server si a creea de asemenea si mesajele
+pe care clientul le trimite catre server. Pentru a face acest lucru mai usor am folosit biblioteca parson recomandata in enuntul temei
+pe care o gasim la link-ul:  https://github.com/kgabis/parson
+Pentru folosirea comenzilor din aceasta biblioteca si a diferitelor optionalitati m am inspirat de pe acest link:
+https://www.programmersought.com/article/38282693121/
+
+    In fisierele requests.h si requests.c am adaugat functiile preluate din laborator prin intermediul carora facem cereri catrte server,
+acestea putand fi de tipul get,post sau delete. In fiecare functie respectam structura din laborator adaugand pe rand host-ul,url-ul\
+cat si headerele necesare pentru a face aceste request-uri,modificarile fata de cele preluate din scheletul laborator constand in faptul
+ca am adaugat un token JWT precizant in enuntul temei,necesar pentru a demonstra autentificarea si accesul la biblioteca,cat si scoaterea
+vectorului de cookie-uri deoarece avem nevoie doar de un cookie pe care il retinem intr-un char *,pentru a putea demonstra faptul ca suntem
+logati la server. Am adaugat si o functie de delete necesara in implementarea comenzii delete_book, care respecta aceeasi structura
+ca si functia prin intermediul careia facem cereri de tip "GET".
+
+    In client.c se afla implementare comenzilor noastre prin care vom interactiona cu serverul si vom adauga/scoate/vizualiza carti din
+biblioteca. Citim intr-un while infinit(while(1)) comenzi de la stdin iar in functie de ce comanda citim intram pe unul din cazurile din
+if: 
+    -in register alocam memorie pentru a citi de la stdin username-ul si passwd cat si pentru bufferele in care vom face parsarea erorilor
+primite de la server. Respectam structura comenzii precizata in enuntul temei,oferind prompt pentru username cat si pentru parola,
+urmand urmatorii pasi in cadrul fiecarei comenzi: deschidem conexiunea catre server, construim mesajul si aplicam un tip de cerere
+catre server cu parametrii necesari, apoi retinem in variabila de tip char* response-ul din partea serverului pe care il parcurgem cu
+strstr pentru a verifica eventualele tipuri de erori sau in cazul in care am aplicat Too many requests si afisam mesajele corespunza
+toare daca comanda s a efectuat cu succes,dupa care inchidem conexiunea cu serverul si eliberam memoria alocata pentru citirea datelor
+de la stdin necesare acestei comenzi. De asemenea in cadrul acestei comenzi vom parsa username-ul si parola cu ajutorul bibliotecii parson
+preluata de pe linku-ul e pe git si folosita pentru a creea un string pe care il vom transmite ca body_data catre server respectand
+structura tip a cerorilor noastre catre server.
+
+    - procedam asemanator ca la comanda register,alocam memorie,citim de la stdin datele cu care vom face loginul,parsam prin intermdiul 
+bibliotecii JSON folosita ca in al 2 lea link precizat in acest readme, deschidem conexiunea catre server, construim mesajul si cererea 
+pe care o vom trimite si afisam raspunsul in care cautam erorile primite sau faptul ca comanda s a executat cu succes. In cadrul acestei
+comenzi vom primit si cookie-ul de sesiune cu care vom demonstra ca suntem autentificat la server. Acesta trebuie extras din raspunsul de 
+la server cu comanda strstr, si "taiat" astfel incat sa ramanem doar cu acea cheie de conectare, fiind gasit sub forma "Set-Cookie: ..."
+
+    -urmam aceeasi pasi privind deschidera conexiunii cu serverul,construirea cererii catre server si afisarea mesajului primit ca in cazul
+comenzii login, doar ca nu mai avem nevoie de alocare de buffere in care vom citi username-ul si parola de la stdin si nici de cookie-ul de
+sesiune, vom primi un token prin care vom demonstra la comenzile urmatoare ca avem acces la biblioteca. Acest este primit de la server
+sub forma {"token:"..."} si trebuie "taiat" si extras cu strstr si strcopy, pentru a obtine doar acel string codat de autentificare care 
+va fi trimis ca parametru in cadrul cererilor din comenzile urmatoare pentru a demonstra acessul la biblioteca.
+
+-la comanda get_books,folosind token gasit anterior demonstram ca avem acces la librarie, trimitem cererea catre server cu toti parametrii
+necesari si afisam mesajul de la server unde vor fi afisate toate cartile impreuna cu id-ul lor in format JSON
+
+-get_book este la fel ca la get_books, demonstram ca avem acces la librarie si citim de la stdin id-ul cartii pe care vrem sa o vedem
+,oferind prompt pentru a introduce acest id, apoi construim url-ul prin concatenarea adresei din enunt si cu id-ul cartii pe care dorim sa
+o afisam. Acest url il oferim ca parametrul cand apelam functia care face cererea catre server, printam mesajul de la server car contine
+cartea cu id-ul dorit si inchidem conexiunea.
+
+-add_book-dovedim ca avem acces la bibloteca,oferim prompt pentru a introduce title,author,genre,publisher si page_count,
+construim string-ul parsat cu json pentru a il trimite serverului cand facem acel request, printam mesajul de la server si vedem daca apare ok
+,cartea adauga poate fi vizualizata apeland din nou get_books
+
+-delete_book- aceeasi pasi ca la get_book, construim in mod identic url-ul prin concatenare cu id-ul introdus la prompter,facem cererea
+dupa care printam mesajul de la server si putem vizualiza daca a fost stearsa cartea dorita prin apelare de get_books
+
+-logout-alocam memorie pentru vectorii de parsare a erorilor, deschidem conexiunea, facem cererea catre server cu cookie ca param 
+pentru a demonstra ca mai suntem autentificati, resetam cookie-ul si toke-ul pentru ca dupa ce se executa aceasta comanda nu trebuie sa mai
+avem acces la celelalte comenzi pana nu ne logam din nou,afisam mesajul de la server si inchidem conexiunea
+
+-exit- inchidem serverul,nu mai pot fi citite comenzi de la tastatura si eliberam memoria alocata
+
+Am preluat fisierul Makefile pentru compilare din laboratorul 10, in care am adaugat si parson.c
